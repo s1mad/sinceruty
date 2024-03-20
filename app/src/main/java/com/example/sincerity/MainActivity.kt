@@ -7,8 +7,6 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -17,7 +15,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.sincerity.room.database.SincerityDatabase
+import com.example.sincerity.room.repository.SincerityRepository
 import com.example.sincerity.ui.theme.SincerityTheme
+import com.example.sincerity.view.CardQuestionScreen
+import com.example.sincerity.view.UserCardsScreen
+import com.example.sincerity.view.UsersScreen
 
 class MainActivity : ComponentActivity() {
     private val database by lazy {
@@ -33,9 +35,11 @@ class MainActivity : ComponentActivity() {
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     return SincerityViewModel(
-                        database.userDao,
-                        database.cardDao,
-                        database.questionDao
+                        repository = SincerityRepository(
+                            database.userDao,
+                            database.cardDao,
+                            database.questionDao
+                        )
                     ) as T
                 }
             }
@@ -50,22 +54,29 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val state by viewModel.state.collectAsState()
                     val navController = rememberNavController()
 
                     NavHost(navController = navController, startDestination = "UsersScreen") {
                         composable("UsersScreen") {
                             UsersScreen(
-                                state = state,
-                                navController = navController,
-                                onEvent = viewModel::onUserEvent
+                                viewModel = viewModel,
+                                navController = navController
                             )
                         }
-                        composable("AddUserScreen") {
-                            AddUserScreen(
-                                state = state,
+                        composable("UserCardsScreen/{userId}") { navBackStack ->
+                            val userId: Long = navBackStack.arguments?.getString("userId")?.toLong() ?: -1
+                            UserCardsScreen(
+                                viewModel = viewModel,
                                 navController = navController,
-                                onEvent = viewModel::onUserEvent
+                                userId = userId
+                            )
+                        }
+                        composable("CardQuestionScreen/{cardId}") { navBackStack ->
+                            val cardId: Long = navBackStack.arguments?.getString("cardId")?.toLong() ?: -1
+                            CardQuestionScreen(
+                                viewModel = viewModel,
+                                navController = navController,
+                                cardId = cardId
                             )
                         }
                     }

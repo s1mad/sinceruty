@@ -17,11 +17,8 @@ interface UserDao {
     @Delete
     suspend fun deleteUser(user: User)
 
-    @Query("SELECT * FROM users ORDER BY id")
-    fun getUsersById(): Flow<List<User>>
-
     @Query("SELECT * FROM users ORDER BY username")
-    fun getUsersByUsername(): Flow<List<User>>
+    fun getAllUsers(): Flow<List<User>>
 
     @Transaction
     @Query("SELECT * FROM users WHERE id = :id")

@@ -1,61 +1,49 @@
 package com.example.sincerity
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.sincerity.room.dao.CardDao
-import com.example.sincerity.room.dao.QuestionDao
-import com.example.sincerity.room.dao.UserDao
+import com.example.sincerity.room.entity.Card
+import com.example.sincerity.room.entity.Question
 import com.example.sincerity.room.entity.User
-import com.example.sincerity.room.event.UserEvent
+import com.example.sincerity.room.repository.SincerityRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class SincerityViewModel(
-    private val userDao: UserDao,
-    private val cardDao: CardDao,
-    private val questionDao: QuestionDao
+    private val repository: SincerityRepository
 ) : ViewModel() {
-    val isSortedByUsername = MutableStateFlow(true)
 
-    //////////////////////////////////////////////////////////////
-    // User //////////////////////////////////////////////////////
-    private var users = isSortedByUsername.flatMapLatest { sort ->
-        if (sort){
-            userDao.getUsersByUsername()
-        } else{
-            userDao.getUsersById()
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
-    val _state = MutableStateFlow(UserState())
-    val state = combine(_state, isSortedByUsername, users) { state, isSortedByUsername, users ->
-        state.copy(
-            users = users
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserState())
-    fun onUserEvent(event: UserEvent) {
-        when (event) {
-            is UserEvent.DeleteUser -> {
-                viewModelScope.launch { userDao.deleteUser(event.user) }
-            }
+    private val _users = MutableStateFlow<List<User>>(emptyList())
+    val users: StateFlow<List<User>> = _users.asStateFlow()
 
-            is UserEvent.SaveUser -> {
-                val user = User(
-                    username = state.value.username.value
-                )
-                viewModelScope.launch { userDao.upsertUser(user) }
-                _state.update {
-                    it.copy(
-                        username = mutableStateOf("")
-                    )
-                }
-            }
-            UserEvent.SortUsers -> isSortedByUsername.value = !isSortedByUsername.value
-        }
+    init {
+        viewModelScope.launch { repository.users.collect {
+            _users.value = it
+        }}
     }
+
+    fun upsertUser(user: User) = viewModelScope.launch {
+        repository.upsertUser(user)
+    }
+    fun deleteUser(user: User) = viewModelScope.launch {
+        repository.deleteUser(user)
+    }
+
+    fun upsertCard(card: Card) = viewModelScope.launch {
+        repository.upsertCard(card)
+    }
+    fun deleteCard(card: Card) = viewModelScope.launch {
+        repository.deleteCard(card)
+    }
+    fun upsertQuestion(question: Question) = viewModelScope.launch {
+        repository.upsertQuestion(question)
+    }
+    fun deleteQuestion(question: Question) = viewModelScope.launch {
+        repository.deleteQuestion(question)
+    }
+
+    fun getUserCards(userId: Long) = repository.getUserCards(userId)
+    fun getCardQuestions(cardId: Long) = repository.getCardQuestions(cardId)
 }

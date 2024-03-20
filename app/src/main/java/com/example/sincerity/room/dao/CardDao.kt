@@ -18,10 +18,7 @@ interface CardDao {
     suspend fun deleteCard(card: Card)
 
     @Query("SELECT * FROM cards WHERE userId = :userId ORDER BY id")
-    fun getCardsById(userId: Long): Flow<List<Card>>
-
-    @Query("SELECT * FROM cards WHERE userId = :userId ORDER BY type")
-    fun getCardsByType(userId: Long): Flow<List<Card>>
+    fun getAllUserCards(userId: Long): Flow<List<Card>>
 
     @Transaction
     @Query("SELECT * FROM cards WHERE id = :id")

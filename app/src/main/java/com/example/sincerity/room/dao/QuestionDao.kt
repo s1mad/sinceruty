@@ -16,8 +16,5 @@ interface QuestionDao {
     suspend fun deleteQuestion(question: Question)
 
     @Query("SELECT * FROM questions WHERE cardId = :cardId ORDER BY id")
-    fun getCardsById(cardId: Long): Flow<List<Question>>
-
-    @Query("SELECT * FROM questions WHERE cardId = :cardId ORDER BY text")
-    fun getCardsByText(cardId: Long): Flow<List<Question>>
+    fun getAllCardQuestions(cardId: Long): Flow<List<Question>>
 }
